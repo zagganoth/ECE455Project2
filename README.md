@@ -1,2 +1,2 @@
 # ECE455Project2
-Deadline Driven Scheduler
+Deadline Driven Scheduler for RTOS (FreeRTOS)
