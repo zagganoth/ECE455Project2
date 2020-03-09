@@ -3,21 +3,23 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "stm32f4_discovery.h"
 #include "options.h"
 
 
 typedef struct task_List {
-    TaskHandle_t Handle;
-    TickType_t t_deadline;
-    uint32_t t_type;
-    char* t_name;
-    struct task_List* t_next;
+    TaskHandle_t t_Handle;
+    TickType_t t_Deadline;
+    uint32_t t_Type;
+    char* t_Name;
+    struct task_List* t_Next;
 }task_List, task_Node;
 
 //list function prototypes
 void List_Add(task_List *, TaskHandle_t, TickType_t);
-void list_remove(task_List *,TaskHandle_t );
-void list_delete(task_List *);
+void List_Remove(task_List *,TaskHandle_t );
+void List_Delete(task_List *);
+int List_Size(task_List *);
+//list debug functions prototypes
+void Print_List(task_List *);
 
-#endif 
+#endif
