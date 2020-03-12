@@ -10,12 +10,18 @@
 #include "../FreeRTOS_Source/include/task.h"
 #include "../FreeRTOS_Source/include/timers.h"
 
-
-typedef struct task_List {
+typedef struct dd_task
+{
     TaskHandle_t t_Handle;
     TickType_t t_Deadline;
     uint32_t t_Type;
+    uint32_t t_ID;
+    uint32_t t_Release_Time;
+    uint32_t t_Completion_Time;
     char* t_Name;
+};
+typedef struct task_List {
+	struct dd_task t_Task;
     struct task_List* t_Next;
 }task_List, task_Node;
 

@@ -49,7 +49,7 @@ void List_Add(task_List* old_t_List, TaskHandle_t new_t_Handle, TickType_t new_t
     return;
 }
 
-void List_Remove(task_List * old_t_List, TaskHandle_t del_t_Handle)
+void List_Remove(task_List * old_t_List, uint32_t task_id)
 {
     //first case: empty list
     if (old_t_List == NULL)
@@ -59,22 +59,22 @@ void List_Remove(task_List * old_t_List, TaskHandle_t del_t_Handle)
     if(old_t_List -> t_Type ==1)
         vPortFree(del_t_Handle);
     //third case: remove first task on list
-    if((temp -> t_Handle == del_t_Handle) && temp -> t_Next)
+    if((temp -> t_ID == del_t_Handle) && temp -> t_Next)
     {
         task_Node* old_t = temp -> t_Next;
         *old_t_List = *temp -> t_Next;
         vPortFree((void*)old_t);
     }
     //fourth case: active list with one entry
-    else if((temp -> t_Handle == del_t_Handle) && temp -> t_Next)
+    else if((temp -> t_ID == del_t_Handle) && temp -> t_Next)
     {
         old_t_List-> t_Next = 0;
-        old_t_List -> t_Handle = 0;
+        old_t_List -> t_ID = 0;
     }
     //general case: remove task entry specified by t_Handle
     else while(temp -> t_Next)
     {
-        if (temp -> t_Next -> t_Handle == del_t_Handle)
+        if (temp -> t_Next -> t_ID == del_t_Handle)
         {
         task_Node * temp_2 = temp -> t_Next;
         temp->t_Next = temp_2 -> t_Next;
