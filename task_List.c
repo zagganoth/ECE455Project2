@@ -83,7 +83,19 @@ void List_Remove(task_List * old_t_List, uint32_t task_id)
         temp = temp -> t_Next;
     }
 }
-
+struct dd_task* List_Find(task_List* old_t_List, uint32_t task_id)
+{
+	task_List* temp = old_t_List;
+	while(temp != NULL)
+	{
+		if(temp->task_id == task_id)
+		{
+			return temp;
+		}
+		temp = temp->t_Next;
+	}
+	return NULL;
+}
 int List_Size(task_List * t_List){
     task_List * temp = t_List;
     int size =0;

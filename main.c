@@ -145,23 +145,25 @@ functionality.
 #include "../FreeRTOS_Source/include/semphr.h"
 #include "../FreeRTOS_Source/include/task.h"
 #include "../FreeRTOS_Source/include/timers.h"
-
+#include "task_List.h"
 
 
 /*-----------------------------------------------------------*/
 #define mainQUEUE_LENGTH 100
 
-#define amber  	0
-#define green  	1
-#define red  	2
-#define blue  	3
 
-char leds[4][10]= {"amber","green","red","blue"};
-#define amber_led	LED3
-#define green_led	LED4
-#define red_led		LED5
-#define blue_led	LED6
-
+typedef enum messageType {
+	RELEASE_TASK = 0,
+	COMPLETE_TASK,
+	ENSURE_TASK_COMPLETE,
+	GET_ACTIVE_LIST,
+	GET_COMPLETED_LIST,
+	GET_OVERDUE_LIST
+} messageType;
+typedef struct message {
+    struct dd_task* taskInfo;
+    messageType messType;
+} message;
 /*
  * TODO: Implement this function for any hardware specific clock configuration
  * that was not already performed before main() was called.
@@ -173,10 +175,7 @@ static void prvSetupHardware( void );
  * this file.
  */
 static void Manager_Task( void *pvParameters );
-static void Blue_LED_Controller_Task( void *pvParameters );
-static void Green_LED_Controller_Task( void *pvParameters );
-static void Red_LED_Controller_Task( void *pvParameters );
-static void Amber_LED_Controller_Task( void *pvParameters );
+static void dd_scheduler(void *pvParameters);
 
 xQueueHandle xQueue_handle = 0;
 
@@ -185,12 +184,6 @@ xQueueHandle xQueue_handle = 0;
 
 int main(void)
 {
-
-	/* Initialize LEDs */
-	STM_EVAL_LEDInit(amber_led);
-	STM_EVAL_LEDInit(green_led);
-	STM_EVAL_LEDInit(red_led);
-	STM_EVAL_LEDInit(blue_led);
 
 	/* Configure the system ready to run the demo.  The clock configuration
 	can be done here if it was not done before main() was called. */
@@ -205,19 +198,66 @@ int main(void)
 	/* Add to the registry, for the benefit of kernel aware debugging. */
 	vQueueAddToRegistry( xQueue_handle, "MainQueue" );
 
-	xTaskCreate( Manager_Task, "Manager", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
-	xTaskCreate( Blue_LED_Controller_Task, "Blue_LED", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	xTaskCreate( Red_LED_Controller_Task, "Red_LED", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	xTaskCreate( Green_LED_Controller_Task, "Green_LED", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	xTaskCreate( Amber_LED_Controller_Task, "Amber_LED", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate( Manager_Task, "Manager", configMINIMAL_STACK_SIZE, NULL, 2, NULL);d
 
 	/* Start the tasks and timer running. */
 	vTaskStartScheduler();
 
 	return 0;
 }
-
-
+void CompleteTask(task_List* to_task_list,task_List* active_task_list,uint32_t task_id )
+{
+	struct dd_task* completedTask;
+	//completedTask != NULL
+	if(completedTask = List_Find(active_task_list,task_id))
+	{
+		List_Add(to_task_list,completedTask);
+		List_Remove(active_task_list,task_id);
+	}
+	//Insert code to delete active task here
+}
+void startTimer(uint32 duration, uint32 task_id)
+{
+	//call back dd_scheduler to check if task has completed
+	return;
+}
+void ReleaseTask(task_List* active_task_list,struct dd_task* taskInfo)
+{
+	List_Add(active_task_list,taskInfo->t_ID);
+	startTimer(0,0);
+}
+static void dd_scheduler(void *pvParameters)
+{
+	message *mess;
+	task_List* active_task_list;
+	task_List* complete_task_list;
+	task_List* overdue_task_list;
+	while(1)
+	{
+		if(xQueueReceive(message_queue,&mess,1000))
+		{
+			switch(mess->messType)
+			{
+				case RELEASE_TASK:
+					ReleaseTask(active_task_list,mess->taskInfo);
+					break;
+				case COMPLETE_TASK:
+					CompleteTask(completed_task_list,active_task_list,mess->taskInfo->t_ID);
+					vPortFree(mess->taskInfo);
+					break;
+				case ENSURE_TASK_COMPLETE:
+					//if task is active when this is called, move it to overdue
+					break;
+				case GET_ACTIVE_LIST:
+					break;
+				case GET_COMPLETED_LIST:
+					break;
+				case GET_OVERDUE_LIST:
+					break;
+			}
+		}
+	}
+}
 /*-----------------------------------------------------------*/
 
 static void Manager_Task( void *pvParameters )
@@ -228,154 +268,12 @@ static void Manager_Task( void *pvParameters )
 	while(1)
 	{
 
-		if(tx_data == amber)
-			STM_EVAL_LEDOn(amber_led);
-		if(tx_data == green)
-			STM_EVAL_LEDOn(green_led);
-		if(tx_data == red)
-			STM_EVAL_LEDOn(red_led);
-		if(tx_data == blue)
-			STM_EVAL_LEDOn(blue_led);
-
-		if( xQueueSend(xQueue_handle,&tx_data,1000))
-		{
-			printf("%s ON!\n", leds[tx_data]);
-			if(++tx_data == 4)
-				tx_data = 0;
-			vTaskDelay(1000);
-		}
-		else
-		{
-			printf("Manager Failed!\n");
-		}
 	}
 }
 
 /*-----------------------------------------------------------*/
 
-static void Blue_LED_Controller_Task( void *pvParameters )
-{
-	uint32_t rx_data;
-	while(1)
-	{
-		if(xQueueReceive(xQueue_handle, &rx_data, 1000))
-		{
-			if(rx_data == blue)
-			{
-				vTaskDelay(250);
-				STM_EVAL_LEDOff(blue_led);
-				printf("Blue OFF!\n");
-			}
-			else
-			{
-				if( xQueueSend(xQueue_handle,&rx_data,500))
-					{
-						printf("Blue GRP (%s).\n", leds[rx_data]); // Got Wrong Package
-						vTaskDelay(500);
-					}
-			}
-		}
-	}
-}
 
-
-/*-----------------------------------------------------------*/
-
-static void Green_LED_Controller_Task( void *pvParameters )
-{
-	uint32_t rx_data;
-	while(1)
-	{
-		if(xQueueReceive(xQueue_handle, &rx_data, 500))
-		{
-			if(rx_data == green)
-			{
-				vTaskDelay(250);
-				STM_EVAL_LEDOff(green_led);
-				printf("Green OFF!\n");
-			}
-			else
-			{
-				if( xQueueSend(xQueue_handle,&rx_data,1000))
-					{
-						printf("Green GRP (%s).\n", leds[rx_data]); // Got Wrong Package
-						vTaskDelay(500);
-					}
-			}
-		}
-	}
-}
-
-/*-----------------------------------------------------------*/
-
-static void Red_LED_Controller_Task( void *pvParameters )
-{
-	uint32_t rx_data;
-	while(1)
-	{
-		if(xQueueReceive(xQueue_handle, &rx_data, 500))
-		{
-			if(rx_data == red)
-			{
-				vTaskDelay(250);
-				STM_EVAL_LEDOff(red_led);
-				printf("Red OFF!\n");
-			}
-			else
-			{
-				if( xQueueSend(xQueue_handle,&rx_data,1000))
-					{
-						printf("Red GRP (%s).\n", leds[rx_data]); // Got Wrong Package
-						vTaskDelay(500);
-					}
-			}
-		}
-	}
-}
-
-
-/*-----------------------------------------------------------*/
-
-static void Amber_LED_Controller_Task( void *pvParameters )
-{
-	uint32_t rx_data;
-	while(1)
-	{
-		if(xQueueReceive(xQueue_handle, &rx_data, 500))
-		{
-			if(rx_data == amber)
-			{
-				vTaskDelay(250);
-				STM_EVAL_LEDOff(amber_led);
-				printf("Amber OFF!\n");
-			}
-			else
-			{
-				if( xQueueSend(xQueue_handle,&rx_data,1000))
-					{
-						printf("Amber GRP (%s).\n", leds[rx_data]); // Got Wrong Package
-						vTaskDelay(500);
-					}
-			}
-		}
-	}
-}
-
-
-/*-----------------------------------------------------------*/
-
-void vApplicationMallocFailedHook( void )
-{
-	/* The malloc failed hook is enabled by setting
-	configUSE_MALLOC_FAILED_HOOK to 1 in FreeRTOSConfig.h.
-
-	Called if a call to pvPortMalloc() fails because there is insufficient
-	free memory available in the FreeRTOS heap.  pvPortMalloc() is called
-	internally by FreeRTOS API functions that create tasks, queues, software
-	timers, and semaphores.  The size of the FreeRTOS heap is set by the
-	configTOTAL_HEAP_SIZE configuration constant in FreeRTOSConfig.h. */
-	for( ;; );
-}
 /*-----------------------------------------------------------*/
 
 void vApplicationStackOverflowHook( xTaskHandle pxTask, signed char *pcTaskName )
