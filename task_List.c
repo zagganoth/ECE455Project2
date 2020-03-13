@@ -1,28 +1,28 @@
 #include "task_List.h"
 #include <stdlib.h>
 
-void List_Add(task_List* old_t_List, TaskHandle_t new_t_Handle, TickType_t new_t_Deadline)
+void List_Add(task_List* old_t_List, dd_Task* new_task)
 {
     /* Allocate memory for new node in list */
     task_List *temp = old_t_List;
     task_List *node = (task_List*) pvPortMalloc(sizeof(task_List));
     /* initialize node with task atributes */
-    node->t_Handle = new_t_Handle;
-    node->t_Deadline = new_t_Deadline;
-    node->t_Type = old_t_List->t_Type;
-    node->t_Name = pcTaskGetName(new_t_Handle);
+    node-> t_Task -> t_Handle = new_task -> t_Handle;
+    node-> t_Task -> t_Deadline = new_task -> t_Deadline;
+    node-> t_Task -> t_Type = new_task -> t_Type;
+    node-> t_Task -> t_Name = pcTaskGetName(new_task -> t_Handle);
     /* add node to list based on value of t_Deadline */
     //first case: new empty list
-    if(temp->t_Handle == NULL)
+    if(temp-> t_task  == NULL)
     {
         vPortFree((void*)node);
-        temp->t_Deadline = new_t_Deadline;
-        temp->t_Handle = new_t_Handle;
-        temp->t_Name = pcTaskGetName(new_t_Handle);
-        temp->t_Next = NULL;
+        temp-> t_Task -> t_Deadline = new_task -> t_Deadline;
+        temp-> t_Task -> t_Handle = new_task ->  t_Handle;
+        temp-> t_Task -> t_Name = pcTaskGetName(new_task -> new_t_Handle);
+        temp-> t_Next = NULL;
     }
     //next case: new task has earliest Deadline
-    else if(temp->t_Handle > new_t_Handle)
+    else if(temp-> t_task -> t_Handle > new_task -> t_Handle)
     {
         node->t_Next = old_t_List;
         old_t_List = node;
@@ -30,7 +30,7 @@ void List_Add(task_List* old_t_List, TaskHandle_t new_t_Handle, TickType_t new_t
     //last case: new task has Longer Deadline 
     else while(temp)
     {
-        if(temp->t_Next && (temp->t_Next->t_Deadline > new_t_Deadline))
+        if(temp->t_Next && (temp->t_Next->t_task -> t_Deadline > new_task -> t_Deadline))
         {
             node -> t_Next = temp->t_Next;
             temp -> t_Next = node;
@@ -49,7 +49,7 @@ void List_Add(task_List* old_t_List, TaskHandle_t new_t_Handle, TickType_t new_t
     return;
 }
 
-void List_Remove(task_List * old_t_List, uint32_t task_id)
+void List_Remove(task_List * old_t_List, uint32_t task_ID)
 {
     //first case: empty list
     if (old_t_List == NULL)
@@ -59,14 +59,14 @@ void List_Remove(task_List * old_t_List, uint32_t task_id)
     if(old_t_List -> t_Type ==1)
         vPortFree(del_t_Handle);
     //third case: remove first task on list
-    if((temp -> t_ID == del_t_Handle) && temp -> t_Next)
+    if((temp -> t_Task -> t_ID == task_ID) && temp -> t_Next)
     {
         task_Node* old_t = temp -> t_Next;
         *old_t_List = *temp -> t_Next;
         vPortFree((void*)old_t);
     }
     //fourth case: active list with one entry
-    else if((temp -> t_ID == del_t_Handle) && temp -> t_Next)
+    else if((temp -> t_Task -> t_ID == task_ID) && temp -> t_Next)
     {
         old_t_List-> t_Next = 0;
         old_t_List -> t_ID = 0;
@@ -74,7 +74,7 @@ void List_Remove(task_List * old_t_List, uint32_t task_id)
     //general case: remove task entry specified by t_Handle
     else while(temp -> t_Next)
     {
-        if (temp -> t_Next -> t_ID == del_t_Handle)
+        if (temp -> t_Next -> t_task -> t_ID == del_t_Handle)
         {
         task_Node * temp_2 = temp -> t_Next;
         temp->t_Next = temp_2 -> t_Next;
@@ -104,10 +104,10 @@ void Print_List(task_List * t_List){
     if(temp!=NULL)
     {
         printf("Contents of List: (%d tasks on list)\n", List_Size(temp));
-        printf("%d.    %s\n", i, temp -> t_Name);
+        printf("%d.    %s\n", i, temp -> t_Task -> t_Name);
         while(temp -> t_Next)
         {
-            printf("%d.    %s\n", i, temp -> t_Name);
+            printf("%d.    %s\n", i, temp -> T_task -> t_Name);
             temp = temp -> t_Next;
         }
     }
